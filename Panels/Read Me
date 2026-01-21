@@ -1,0 +1,1 @@
+The Panels are design in PHP and we have used the Directus via MySql so there are config.php, auth.php, auto_connect.php, Directus_database.md files
