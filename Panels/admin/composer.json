@@ -1,0 +1,6 @@
+{
+    "name": "asus/admin-panel",
+    "require": {
+        "phpoffice/phpspreadsheet": "^5.4"
+    }
+}
