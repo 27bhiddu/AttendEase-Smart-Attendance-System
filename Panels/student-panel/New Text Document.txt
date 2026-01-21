@@ -1,0 +1,48 @@
+<?php
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/student_auth.php';
+
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+$studentId = $_SESSION['student_id'] ?? null;
+$subjectId = $_GET['id'] ?? null ?? exit('header("Location: subject_attendance.php")');
+
+if (!$studentId || !$subjectId) {
+    header('Location: subject_attendance.php'); exit;
+}
+
+// 1. FETCH SUBJECT NAME
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, DIRECTUS_BASE_URL . '/items/subjects/' . intval($subjectId));
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, getDirectusHeaders());
+$subResponse = curl_exec($ch);
+$subject = json_decode($subResponse, true)['data'] ?? null;
+$subjectName = $subject['name'] ?? 'Unknown';
+curl_close($ch);
+
+// 2. FETCH ATTENDANCE FOR THIS STUDENT + SUBJECT
+$query = http_build_query([
+    'filter' => [
+        '_and' => [
+            ['student_id' => ['_eq' => $studentId]],
+            ['subject_id' => ['_eq' => $subjectId]]  // Key filter!
+        ]
+    ],
+    'sort' => ['date' => '-1'],  // Newest first
+    'limit' => 500
+]);
+
+curl_setopt($ch, CURLOPT_URL, DIRECTUS_BASE_URL . '/items/attendance?' . $query);
+// ... (reuse your cURL setup)
+$attData = json_decode($response, true);
+$records = $attData['data'] ?? [];
+curl_close($ch);
+
+// Quick stats recalc (optional)
+$present = $absent = $total = 0;
+foreach ($records as $row) {
+    $total++;
+    if (!empty($row['present'])) $present++; else $absent++;
+}
+$percent = $total ? round(($present / $total) * 100, 1) : 0;
+?>
